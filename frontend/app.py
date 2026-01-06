@@ -1,6 +1,14 @@
 import flet as ft
+from login import get_login_view
 
 def main(page: ft.Page):
+
+    def handle_login_success():
+        login_container.visible = False    # Ascundem login-ul
+        journal_view.visible = True        # Arătăm jurnalul
+        page.navigation_bar.visible = True # Arătăm meniul de jos
+        page.update()
+
     # Setări de bază
     page.title = "HealthyByte - HealthyMind"
     page.theme_mode = ft.ThemeMode.LIGHT
@@ -212,7 +220,19 @@ def main(page: ft.Page):
         on_change=navigate
     )
 
-    page.add(journal_view, stats_view)
+    #------------------------------------------------------------
+    login_container = get_login_view(handle_login_success)
+
+    # MODIFICĂ journal_view să fie invizibil la început
+    journal_view.visible = False 
+    
+    # MODIFICĂ navigation_bar să fie invizibil la început
+    page.navigation_bar.visible = False
+
+    # Adaugă login_container în listă
+    page.add(login_container, journal_view, stats_view)
+    #---------------------------------------------------------------
+   # page.add(journal_view, stats_view)
 
 if __name__ == "__main__":
     ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=8550)
