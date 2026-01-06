@@ -221,7 +221,8 @@ def main(page: ft.Page):
     )
 
     #------------------------------------------------------------
-    login_container = get_login_view(handle_login_success)
+    # În app.py, în interiorul funcției main:
+    login_container = get_login_view(page, handle_login_success) # Adaugă 'page' ca prim argument
 
     # MODIFICĂ journal_view să fie invizibil la început
     journal_view.visible = False 
@@ -235,4 +236,4 @@ def main(page: ft.Page):
    # page.add(journal_view, stats_view)
 
 if __name__ == "__main__":
-    ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=8550)
+    ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=8550, assets_dir="assets")
