@@ -23,7 +23,7 @@ def get_login_view(page, on_login_success):
             content=ft.Column([
                 ft.Container(
                     content=ft.Column([
-                        ft.Text("HealthyByte Login", size=32, weight="bold", color="blue900"),
+                        ft.Text("HealthyByte Login", size=32, weight="bold", color="green900"),
                         ft.Text("Your journey to a healthier life", color="grey700"),
                         ft.Divider(height=20, color="transparent"),
                         username,
@@ -33,7 +33,8 @@ def get_login_view(page, on_login_success):
                             "Login", 
                             on_click=lambda _: on_login_success(), 
                             width=300, 
-                            height=50
+                            height=50,
+                            bgcolor=ft.colors.GREEN_600
                         ),
                     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                     bgcolor=ft.colors.with_opacity(0.9, "white"), 
