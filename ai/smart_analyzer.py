@@ -87,7 +87,7 @@ Răspunde DOAR cu JSON valid, nimic altceva.
                         )
                         nutrition_data[food_name] = result
                     except Exception as e:
-                        print(f"⚠️ Nu s-au găsit date pentru '{food_name}': {e}")
+                        print(f" Nu s-au găsit date pentru '{food_name}': {e}")
                         nutrition_data[food_name] = None
         
         return nutrition_data
@@ -202,7 +202,7 @@ async def test_complete():
     analyzer = SmartFoodAnalyzer()
     
     # Exemplu de input utilizator
-    user_input = "Am mâncat 200g pâine, 150g ouă fierte și 80g brânză. Mă simt vinovat că am mâncat prea mult."
+    user_input = "Am mâncat 200g pâine, 150g castraveti și 80g brânză. Mă simt vinovat că am mâncat prea mult."
     
     # Analiza completă
     result = await analyzer.analyze_complete(user_input)
@@ -214,8 +214,8 @@ if __name__ == "__main__":
     try:
         asyncio.run(test_complete())
     except KeyboardInterrupt:
-        print("\n⚠️ Întrerupt de utilizator")
+        print("\n Întrerupt de utilizator")
     except Exception as e:
-        print(f"❌ Eroare: {e}")
+        print(f" Eroare: {e}")
         import traceback
         traceback.print_exc()
