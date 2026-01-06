@@ -205,3 +205,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# Virtual Environment
+.venv/
+# Environment variables (API keys)
+.env
