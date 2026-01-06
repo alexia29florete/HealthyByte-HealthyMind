@@ -28,6 +28,26 @@ class JournalEntry(db.Model):
     nutrients = db.Column(db.Text, nullable=True)            # JSON string
     feedback = db.Column(db.Text, nullable=True)             # generated
 
+    main_meals = db.Column(db.Text, nullable=True)   # JSON string
+    snacks = db.Column(db.Text, nullable=True)       # JSON string
+
+    # Wellness: {mood, energy, focus} (JSON string)
+    wellness = db.Column(db.Text, nullable=True)     # JSON string
+
+    # Rest: {sleep_hours, sleep_interval} (JSON string)
+    rest = db.Column(db.Text, nullable=True)         # JSON string
+
+    # Fitness: list[{exercise, time_min}] (JSON string)
+    fitness = db.Column(db.Text, nullable=True)      # JSON string
+
+    # Scalars (handy for stats / filtering)
+    mood = db.Column(db.Integer, nullable=True)
+    energy = db.Column(db.Integer, nullable=True)
+    focus = db.Column(db.Integer, nullable=True)
+
+    sleep_hours = db.Column(db.Integer, nullable=True)
+    sleep_interval = db.Column(db.String(32), nullable=True)
+
     created_at = db.Column(db.DateTime, nullable=False, default=func.now())
 
     user = db.relationship("User", back_populates="entries")

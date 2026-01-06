@@ -5,6 +5,7 @@ from .routes import register_blueprints
 
 def create_app() -> Flask:
     app = Flask(__name__)
+    app.json.ensure_ascii = False
     app.config.from_object(Config())
 
     db.init_app(app)
