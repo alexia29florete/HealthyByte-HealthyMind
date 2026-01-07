@@ -28,23 +28,23 @@ class SmartFoodAnalyzer:
     
     def extract_foods_with_llm(self, user_text):
         """
-        Pasul 1: Folosește OpenAI pentru a extrage alimentele din text
+        Step 1: Use OpenAI to extract food names from text
         
         Returns:
-            Lista de alimente menționate (fără date nutriționale)
+            List of mentioned foods (without nutritional data)
         """
         prompt = f"""
-Analizează următorul text și extrage DOAR numele alimentelor menționate.
-Returnează un JSON cu lista de alimente, fără cantități sau alte detalii.
+Analyze the following text and extract ONLY the food names mentioned.
+Return a JSON with the list of foods, without quantities or other details.
 
-Text utilizator: "{user_text}"
+User text: "{user_text}"
 
-Format răspuns (JSON):
+Response format (JSON):
 {{
   "foods": ["apple", "bread", "cheese"]
 }}
 
-Răspunde DOAR cu JSON valid, nimic altceva.
+Respond ONLY with valid JSON, nothing else.
 """
         
         response = self.openai_client.chat.completions.create(
@@ -62,10 +62,10 @@ Răspunde DOAR cu JSON valid, nimic altceva.
     
     async def get_nutrition_from_mcp(self, food_names):
         """
-        Pasul 2: Obține date nutriționale reale din MCP pentru fiecare aliment
+        Step 2: Get real nutritional data from MCP for each food
         
         Returns:
-            Dict cu date nutriționale pentru fiecare aliment
+            Dict with nutritional data for each food
         """
         server_params = StdioServerParameters(
             command=self.node_path,
@@ -87,80 +87,97 @@ Răspunde DOAR cu JSON valid, nimic altceva.
                         )
                         nutrition_data[food_name] = result
                     except Exception as e:
-                        print(f" Nu s-au găsit date pentru '{food_name}': {e}")
+                        print(f"⚠️ No data found for '{food_name}': {e}")
                         nutrition_data[food_name] = None
         
         return nutrition_data
     
     def analyze_with_llm(self, user_text, nutrition_data):
         """
-        Pasul 3: Trimite datele reale către OpenAI pentru analiză finală
+        Step 3: Send real data to OpenAI for final analysis
         
         Returns:
-            Feedback empatic și sugestii bazate pe date reale
+            Empathetic feedback and suggestions based on real data
         """
-        # Parsează și extrage datele nutriționale specifice din JSON
-        nutrition_summary = ""
+        # Parse and extract specific nutritional data from JSON
+        # Calculate totals in Python (not in LLM)
+        totals = {
+            'calories': 0,
+            'protein': 0,
+            'total_fat': 0,
+            'carbohydrates': 0,
+            'iron': 0,
+            'potassium': 0,
+            'calcium': 0,
+            'vitamin_a': 0,
+            'vitamin_c': 0,
+            'vitamin_d': 0
+        }
+        
+        food_details = []
+        foods_with_data = 0
+        
         for food_name, data in nutrition_data.items():
             if data and not data.isError and data.content:
                 try:
-                    # Parsează JSON-ul din content
+                    # Parse JSON from content
                     foods_list = json.loads(data.content[0].text)
                     if foods_list and len(foods_list) > 0:
-                        # Ia primul rezultat (cel mai relevant)
+                        # Take first result (most relevant)
                         food_info = foods_list[0]
                         nutr = food_info.get('nutrition_100g', {})
                         
-                        nutrition_summary += f"\n- {food_name} ({food_info.get('name', 'Unknown')}):\n"
-                        nutrition_summary += f"  * Calorii: {nutr.get('calories', 'N/A')} kcal/100g\n"
-                        nutrition_summary += f"  * Proteine: {nutr.get('protein', 'N/A')}g/100g\n"
-                        nutrition_summary += f"  * Grăsimi: {nutr.get('total_fat', 'N/A')}g/100g\n"
-                        nutrition_summary += f"  * Carbohidrați: {nutr.get('carbohydrates', 'N/A')}g/100g\n"
-                        nutrition_summary += f"  * Fier: {nutr.get('iron', 'N/A')}mg/100g\n"
-                        nutrition_summary += f"  * Potasiu: {nutr.get('potassium', 'N/A')}mg/100g\n"
-                        nutrition_summary += f"  * Calciu: {nutr.get('calcium', 'N/A')}mg/100g\n"
-                        nutrition_summary += f"  * Vitamina A: {nutr.get('vitamin_a', 'N/A')}µg/100g\n"
-                        nutrition_summary += f"  * Vitamina C: {nutr.get('vitamin_c', 'N/A')}mg/100g\n"
-                        nutrition_summary += f"  * Vitamina D: {nutr.get('vitamin_d', 'N/A')}µg/100g\n"
-                    else:
-                        nutrition_summary += f"\n- {food_name}: Nu s-au găsit rezultate\n"
+                        # Accumulate totals (assuming 100g per food item - adjust as needed)
+                        for key in totals.keys():
+                            value = nutr.get(key if key != 'total_fat' else 'total_fat', 0)
+                            if isinstance(value, (int, float)):
+                                totals[key] += value
+                        
+                        foods_with_data += 1
+                        food_details.append(f"{food_name} ({food_info.get('name', 'Unknown')})")
                 except (json.JSONDecodeError, KeyError, IndexError) as e:
-                    nutrition_summary += f"\n- {food_name}: Eroare la parsare: {e}\n"
-            else:
-                nutrition_summary += f"\n- {food_name}: Date indisponibile\n"
+                    food_details.append(f"{food_name} (data unavailable)")
+        
+        # Round all values to 1 decimal
+        for key in totals:
+            totals[key] = round(totals[key], 1)
+        
+        # Format nutritional summary
+        nutrition_summary = f"""
+Total nutritional values (based on {foods_with_data} foods):
+- Total Calories: {totals['calories']} kcal
+- Protein: {totals['protein']} g
+- Fat: {totals['total_fat']} g
+- Carbohydrates: {totals['carbohydrates']} g
+- Iron: {totals['iron']} mg
+- Potassium: {totals['potassium']} mg
+- Calcium: {totals['calcium']} mg
+- Vitamin A: {totals['vitamin_a']} µg
+- Vitamin C: {totals['vitamin_c']} mg
+- Vitamin D: {totals['vitamin_d']} µg
+
+Foods analyzed: {', '.join(food_details)}
+"""
         
         prompt = f"""
-Ești un asistent profesional și empatic de nutriție și sănătate mentală.
+You are a professional and empathetic nutrition and mental health assistant.
 
-Utilizatorul a spus: "{user_text}"
+User said: "{user_text}"
 
-Date nutriționale REALE din baza de date:
+REAL nutritional data from database:
 {nutrition_summary}
 
-Analizează aceste date și oferă un răspuns sub forma unui text continuu, profesional dar prietenos. NU folosi liste numerotate, bullet points sau fragmente separate (cu excepția valorilor nutriționale).
+Analyze this data and provide a response in continuous text form, professional but friendly. DO NOT use numbered lists, bullet points, or separate fragments (except for the nutritional values already provided above).
 
-Structura răspunsului:
-1. Începe cu valorile nutriționale totale în format:
-   - Calorii totale: X kcal
-   - Proteine: Xg
-   - Grăsimi: Xg
-   - Carbohidrați: Xg
-   - Fier: Xmg (sau menționează dacă date indisponibile)
-   - Potasiu: Xmg (sau menționează dacă date indisponibile)
-   - Calciu: Xmg (sau menționează dacă date indisponibile)
-   - Vitamina A: X (sau menționează dacă date indisponibile)
-   - Vitamina C: X (sau menționează dacă date indisponibile)
-   - Vitamina D: X (sau menționează dacă date indisponibile)
+After the nutritional summary, continue with fluid text that includes:
+- Analysis of nutritional balance (what's missing or deficient and what effects it may have)
+- What nutrients are in excess and what effects it may have
+- Impact on emotional state and energy levels
+- Empathetic and realistic feedback, without exaggeration
+- Practical and concrete suggestions
+- A recommendation for the next meal
 
-2. După această listă, continuă cu text fluid care include:
-- Analiza echilibrului nutrițional (ce lipsește sau e deficitar și ce efecte poate avea)
-- Ce nutrienți sunt în exces și ce efecte poate avea
-- Impactul asupra stării emoționale și nivelului de energie
-- Feedback empatic și realist, fără exagerări
-- Sugestii practice și concrete
-- O recomandare pentru următoarea masă
-
-Ton: Profesional dar empatic, direct și sincer, fără formule exagerate de tipul "mă bucur", "hai să vedem", etc. Vorbește clar și la obiect.
+Tone: Professional but empathetic, direct and honest, without exaggerated phrases. Speak clearly and to the point.
 """
         
         response = self.openai_client.chat.completions.create(
@@ -176,35 +193,81 @@ Ton: Profesional dar empatic, direct și sincer, fără formule exagerate de tip
     
     async def analyze_complete(self, user_text):
         """
-        Analiza completă: LLM + MCP + LLM
+        Complete analysis: LLM + MCP + LLM
         
-        Fluxul complet în 3 pași:
-        1. OpenAI extrage alimente din text
-        2. MCP obține date nutriționale reale
-        3. OpenAI analizează cu date reale și oferă feedback
+        Complete flow in 3 steps:
+        1. OpenAI extracts foods from text
+        2. MCP gets real nutritional data
+        3. OpenAI analyzes with real data and provides feedback
         """
-        # Pasul 1: Extrage alimente
+        # Step 1: Extract foods
         foods = self.extract_foods_with_llm(user_text)
         
-        # Pasul 2: Obține date nutriționale
+        # Step 2: Get nutritional data
         nutrition_data = await self.get_nutrition_from_mcp(foods)
         
-        # Pasul 3: Analiză finală
+        # Calculate and print nutritional totals first
+        totals = {
+            'calories': 0,
+            'protein': 0,
+            'total_fat': 0,
+            'carbohydrates': 0,
+            'iron': 0,
+            'potassium': 0,
+            'calcium': 0,
+            'vitamin_a': 0,
+            'vitamin_c': 0,
+            'vitamin_d': 0
+        }
+        
+        for food_name, data in nutrition_data.items():
+            if data and not data.isError and data.content:
+                try:
+                    foods_list = json.loads(data.content[0].text)
+                    if foods_list and len(foods_list) > 0:
+                        food_info = foods_list[0]
+                        nutr = food_info.get('nutrition_100g', {})
+                        
+                        for key in totals.keys():
+                            value = nutr.get(key if key != 'total_fat' else 'total_fat', 0)
+                            if isinstance(value, (int, float)):
+                                totals[key] += value
+                except:
+                    pass
+        
+        # Round and print totals
+        for key in totals:
+            totals[key] = round(totals[key], 1)
+        
+        print("Nutritional Summary:")
+        print(f"- Total Calories: {totals['calories']} kcal")
+        print(f"- Protein: {totals['protein']}g")
+        print(f"- Fat: {totals['total_fat']}g")
+        print(f"- Carbohydrates: {totals['carbohydrates']}g")
+        print(f"- Iron: {totals['iron']}mg")
+        print(f"- Potassium: {totals['potassium']}mg")
+        print(f"- Calcium: {totals['calcium']}mg")
+        print(f"- Vitamin A: {totals['vitamin_a']}µg")
+        print(f"- Vitamin C: {totals['vitamin_c']}mg")
+        print(f"- Vitamin D: {totals['vitamin_d']}µg")
+        print()
+        
+        # Step 3: Final analysis
         final_analysis = self.analyze_with_llm(user_text, nutrition_data)
         
         return final_analysis
 
 
-# Test integrat
+# Integrated test
 async def test_complete():
-    """Test complet: OpenAI + MCP"""
+    """Complete test: OpenAI + MCP"""
     
     analyzer = SmartFoodAnalyzer()
     
-    # Exemplu de input utilizator
-    user_input = "Am mâncat 200g pâine, 150g castraveti și 80g brânză. Mă simt vinovat că am mâncat prea mult."
+    # Example user input
+    user_input = "I ate 200g bread, 150g cucumber, and 80g cheese. I feel guilty that I ate too much."
     
-    # Analiza completă
+    # Complete analysis
     result = await analyzer.analyze_complete(user_input)
     
     print(result)
@@ -214,8 +277,8 @@ if __name__ == "__main__":
     try:
         asyncio.run(test_complete())
     except KeyboardInterrupt:
-        print("\n Întrerupt de utilizator")
+        print("\n Interrupted by user")
     except Exception as e:
-        print(f" Eroare: {e}")
+        print(f" Error: {e}")
         import traceback
         traceback.print_exc()
