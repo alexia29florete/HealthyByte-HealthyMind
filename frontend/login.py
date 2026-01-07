@@ -9,7 +9,7 @@ def get_login_view(page, on_login_success):
         ft.Image(
             #src="ia4_bck.jpg",
             #src="bck.png",
-            src="bck3.jpg",
+            src="bck8.jpg",
             fit=ft.ImageFit.COVER,
             width=page.width, 
             height=page.height,

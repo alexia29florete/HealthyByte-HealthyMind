@@ -12,9 +12,14 @@ def main(page: ft.Page):
    
     page.title = "HealthyByte - HealthyMind"
     page.theme_mode = ft.ThemeMode.LIGHT
-    page.padding = 30
+    page.padding = 10
     page.scroll = ft.ScrollMode.AUTO 
-    page.bgcolor = "#F0F2F5" 
+    #page.bgcolor = "#F0F2F5" 
+    page.theme = ft.Theme(color_scheme_seed=ft.Colors.GREEN)
+    page.theme_mode = ft.ThemeMode.LIGHT
+    page.bgcolor = "#E8F5E9"
+
+
 
     # --- DATA REF---
     breakfast1_ref = ft.Ref[ft.TextField](); lunch1_ref = ft.Ref[ft.TextField](); dinner1_ref = ft.Ref[ft.TextField]()
@@ -26,8 +31,8 @@ def main(page: ft.Page):
     breakfast3_ref = ft.Ref[ft.TextField](); lunch3_ref = ft.Ref[ft.TextField](); dinner3_ref = ft.Ref[ft.TextField]()
     breakfast3_q_ref = ft.Ref[ft.TextField](); lunch3_q_ref = ft.Ref[ft.TextField](); dinner3_q_ref = ft.Ref[ft.TextField]()
     
-    snack1_ref = ft.Ref[ft.TextField](); snack2_ref = ft.Ref[ft.TextField](); snack3_ref = ft.Ref[ft.TextField]()
-    snack1_qref = ft.Ref[ft.TextField](); snack2_qref = ft.Ref[ft.TextField](); snack3_qref = ft.Ref[ft.TextField]()
+    snack1_ref = ft.Ref[ft.TextField](); snack2_ref = ft.Ref[ft.TextField](); snack3_ref = ft.Ref[ft.TextField](); snack4_ref = ft.Ref[ft.TextField](); snack5_ref = ft.Ref[ft.TextField](); snack6_ref = ft.Ref[ft.TextField]()
+    snack1_qref = ft.Ref[ft.TextField](); snack2_qref = ft.Ref[ft.TextField](); snack3_qref = ft.Ref[ft.TextField](); snack4_qref = ft.Ref[ft.TextField](); snack5_qref = ft.Ref[ft.TextField](); snack6_qref = ft.Ref[ft.TextField]()
 
     mood_ref = ft.Ref[ft.Slider](); energy_ref = ft.Ref[ft.Slider](); mindset_ref = ft.Ref[ft.Slider]()
     sleep_h_ref = ft.Ref[ft.TextField](); sleep_i_ref = ft.Ref[ft.TextField]()
@@ -60,9 +65,62 @@ def main(page: ft.Page):
         stats_view.visible = (index == 1)
         page.update()
 
+    # --- ADDED LAST TIME ---
+    image_card = ft.Card(
+         margin=0,
+        content=ft.Container(
+             expand=True,          
+             padding=0,  
+            bgcolor="#F9FFFB",
+            border=ft.border.all(1, "#D6E8D7"),
+         shadow=ft.BoxShadow(
+            blur_radius=14,
+            color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK),
+            offset=ft.Offset(0, 6),
+         ),
+          border_radius=16,
+          clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+          height=350,  
+            content=ft.Image(
+            src="bck7.jpg",  
+            fit=ft.ImageFit.COVER,
+            expand=True, 
+            ),
+        ),
+        elevation=0,
+    ) 
+
+    image_card1 = ft.Card(
+        margin=0,
+        content=ft.Container(
+            bgcolor="#F9FFFB",
+            border=ft.border.all(1, "#D6E8D7"),
+         shadow=ft.BoxShadow(
+            blur_radius=14,
+            color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK),
+            offset=ft.Offset(0, 6),
+         ),
+          border_radius=16,
+          clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+          height=550,  
+            content=ft.Image(
+            src="bck4.jpg",  
+            fit=ft.ImageFit.COVER,
+            ),
+        ),
+        elevation=0,
+    ) 
+
     # ---  UI ---
     journal_view = ft.Column([
-        ft.Text("Daily Journal", size=40, color="blue900", weight="bold"),
+        #ft.Text("Daily Journal", size=40, color="blue900", weight="bold"),
+        ft.Text(
+             "Daily Journal",
+             size=40,
+             weight="bold",
+             color="#2E7D32",   
+             text_align=ft.TextAlign.CENTER,
+            ),
         ft.Text("Please insert details of your day", color="grey700"),
         ft.Container(height=10),
 
@@ -71,6 +129,11 @@ def main(page: ft.Page):
             ft.Column([
                 ft.Card(
                     content=ft.Container(
+                        #########-------------------------------------
+                        bgcolor="#F9FFFB",
+                        border=ft.border.all(1, "#D6E8D7"),
+                        shadow=ft.BoxShadow(blur_radius=14, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK), offset=ft.Offset(0, 6)),
+                        ##------------------------------
                         padding=20,
                         content=ft.Column([
                             ft.ListTile(title=ft.Text("Main Meals", weight="bold")),
@@ -122,6 +185,11 @@ def main(page: ft.Page):
             ft.Column([
                 ft.Card(
                     content=ft.Container(
+                        #########-------------------------------------
+                        bgcolor="#F9FFFB",
+                        border=ft.border.all(1, "#D6E8D7"),
+                        shadow=ft.BoxShadow(blur_radius=14, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK), offset=ft.Offset(0, 6)),
+                        ##------------------------------
                         padding=20,
                         content=ft.Column([
                             ft.ListTile(title=ft.Text("Snacks", weight="bold")),
@@ -140,6 +208,21 @@ def main(page: ft.Page):
                                 ft.TextField(ref=snack3_ref, label="Food3", border="underline", expand=True),
                                 ft.TextField(ref=snack3_qref, label="Quantity3", border="underline", expand=True),
                             ], spacing=10),
+                            ft.ListTile(title=ft.Text("Snack4", weight="bold")),
+                            ft.Row([
+                                ft.TextField(ref=snack4_ref, label="Food4", border="underline", expand=True),
+                                ft.TextField(ref=snack4_qref, label="Quantity4", border="underline", expand=True),
+                            ], spacing=10),
+                            ft.ListTile(title=ft.Text("Snack5", weight="bold")),
+                            ft.Row([
+                                ft.TextField(ref=snack5_ref, label="Food5", border="underline", expand=True),
+                                ft.TextField(ref=snack5_qref, label="Quantity5", border="underline", expand=True),
+                            ], spacing=10),
+                            ft.ListTile(title=ft.Text("Snack6", weight="bold")),
+                            ft.Row([
+                                ft.TextField(ref=snack6_ref, label="Food6", border="underline", expand=True),
+                                ft.TextField(ref=snack6_qref, label="Quantity6", border="underline", expand=True),
+                            ], spacing=10),
                         ])
                     )
                 )
@@ -149,6 +232,11 @@ def main(page: ft.Page):
             ft.Column([
                 ft.Card(
                     content=ft.Container(
+                        #########-------------------------------------
+                        bgcolor="#F9FFFB",
+                        border=ft.border.all(1, "#D6E8D7"),
+                        shadow=ft.BoxShadow(blur_radius=14, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK), offset=ft.Offset(0, 6)),
+                        ##------------------------------
                         padding=20,
                         content=ft.Column([
                             ft.ListTile(title=ft.Text("Wellness", weight="bold")),
@@ -160,10 +248,16 @@ def main(page: ft.Page):
                 )
             ], col={"sm": 12, "md": 6}),
 
+            ft.Column([image_card], col={"sm": 12, "md": 6},expand=True),
             #  ACTIVIY
             ft.Column([
                 ft.Card(
                     content=ft.Container(
+                        #########-------------------------------------
+                        bgcolor="#F9FFFB",
+                        border=ft.border.all(1, "#D6E8D7"),
+                        shadow=ft.BoxShadow(blur_radius=14, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK), offset=ft.Offset(0, 6)),
+                        ##------------------------------
                         padding=20,
                         content=ft.Column([
                             ft.ListTile(title=ft.Text("Rest & Activity", weight="bold")),
@@ -195,7 +289,16 @@ def main(page: ft.Page):
                     )
                 )
             ], col={"sm": 12, "md": 6}),
-        ], spacing=20),
+             
+            ft.Column(
+                    [image_card1],
+                    col={"sm": 12, "md": 6},
+            ),
+        ], 
+           spacing=20,
+           alignment=ft.MainAxisAlignment.START,##################################################
+        ),
+      # ft.Column([image_card1], col={"sm": 12, "md": 6}),
 
         ft.Container(height=20),
         ft.Row([
@@ -222,6 +325,7 @@ def main(page: ft.Page):
 
     feedback_card = ft.Card(
         content=ft.Container(
+            bgcolor=ft.Colors.WHITE,##########################
             padding=20,
             content=ft.Column([
             ft.Row([
@@ -246,7 +350,14 @@ def main(page: ft.Page):
 
     stats_view = ft.Column(
     [
-        ft.Text("Statistics dashboard", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
+        #ft.Text("Statistics dashboard", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
+        ft.Text(
+             "Statistics dashboard",
+             size=40,
+             weight="bold",
+             color="#1B5E20",   
+             text_align=ft.TextAlign.CENTER,
+            ),
         ft.Text("Hours Slept in the last 7 Days", color=ft.Colors.GREY_700),
 
         ft.Container(
@@ -255,9 +366,12 @@ def main(page: ft.Page):
                     ft.LineChartData(
                         data_points=data_points,
                         stroke_width=4,
-                        color=ft.Colors.BLUE,
+                        #color=ft.Colors.BLUE,
+                        #curved=True,
+                        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        color="#43A047", 
                         curved=True,
-                        below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
                         point=True,
                     )
                 ],
@@ -312,9 +426,12 @@ def main(page: ft.Page):
                     ft.LineChartData(
                         data_points=data_points1,
                         stroke_width=4,
-                        color=ft.Colors.BLUE,
+                        #color=ft.Colors.BLUE,
+                        #curved=True,
+                        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        color="#43A047", 
                         curved=True,
-                        below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
                         point=True,
                     )
                 ],
@@ -369,9 +486,12 @@ def main(page: ft.Page):
                     ft.LineChartData(
                         data_points=data_points2,
                         stroke_width=4,
-                        color=ft.Colors.BLUE,
+                        #color=ft.Colors.BLUE,
+                        #curved=True,
+                        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        color="#43A047", 
                         curved=True,
-                        below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
                         point=True,
                     )
                 ],
@@ -426,9 +546,12 @@ def main(page: ft.Page):
                     ft.LineChartData(
                         data_points=data_points3,
                         stroke_width=4,
-                        color=ft.Colors.BLUE,
+                        #color=ft.Colors.BLUE,
+                        #curved=True,
+                        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        color="#43A047", 
                         curved=True,
-                        below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
                         point=True,
                     )
                 ],
@@ -485,6 +608,7 @@ def main(page: ft.Page):
 
    #---------------------------------------------------------------
     page.navigation_bar = ft.NavigationBar(
+        bgcolor="#A5D6A7",
         destinations=[
             ft.NavigationBarDestination(icon="edit_note", label="My Journal"),
             ft.NavigationBarDestination(icon="insert_chart", label="Statistics"),
