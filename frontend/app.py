@@ -207,11 +207,79 @@ def main(page: ft.Page):
         ft.Container(height=40),
     ], visible=True)
 
-    stats_view = ft.Column([
-        ft.Text("Dashboard Statistici", size=30, weight=ft.FontWeight.BOLD),
-        ft.Text("Graficele vor apărea aici."),
-    ], visible=False)
+    #---------------------------------------------
+   # --- 3. UI --- (Secțiunea de Statistici REPARATĂ)
+   # --- 3. UI --- (Secțiunea de Statistici REPARATĂ)
+    valori_grafic = [6, 6, 7, 8, 9, 3, 4]
+    data_points = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic)]
 
+    stats_view = ft.Column(
+    [
+        ft.Text("Dashboard Statistici", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
+        ft.Text("Hours Slept in the last 7 Days", color=ft.Colors.GREY_700),
+
+        ft.Container(
+            content=ft.LineChart(
+                data_series=[
+                    ft.LineChartData(
+                        data_points=data_points,
+                        stroke_width=4,
+                        color=ft.Colors.BLUE,
+                        curved=True,
+                        below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        point=True,
+                    )
+                ],
+                border=ft.border.all(1, ft.Colors.GREY_300),
+                min_y=0,
+                max_y=10,
+                min_x=0,
+                max_x=6,
+                baseline_x=0,
+                left_axis=ft.ChartAxis(
+                    labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(0, 11, 2)],
+                    labels_size=40,
+                ),
+                horizontal_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
+                vertical_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
+                expand=True,
+            ),
+            height=350,
+            padding=ft.padding.all(10),
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            shadow=ft.BoxShadow(blur_radius=10, color=ft.Colors.GREY_300),
+        ),
+
+        ft.Container(height=8),
+
+        ft.Row(
+            [
+                ft.Container(ft.Text("Mo", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Tu", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("We", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Th", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Fr", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Sa", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Su", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+            ],
+            spacing=0,
+        ),
+    ],
+    visible=False,
+    expand=True,
+    )
+
+
+    # --- 3. UI --- (Secțiunea de Statistici REPARATĂ FĂRĂ ERORI)
+   #---------------------------------------------------------------
     page.navigation_bar = ft.NavigationBar(
         destinations=[
             ft.NavigationBarDestination(icon="edit_note", label="Jurnal"),
@@ -220,7 +288,7 @@ def main(page: ft.Page):
         on_change=navigate
     )
 
-    #------------------------------------------------------------
+    ###################################################################
     # În app.py, în interiorul funcției main:
     login_container = get_login_view(page, handle_login_success) # Adaugă 'page' ca prim argument
 
@@ -237,3 +305,13 @@ def main(page: ft.Page):
 
 if __name__ == "__main__":
     ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=8550, assets_dir="assets")
+
+    '''
+                          ft.ChartAxisLabel(value=0, label=ft.Text("L")),
+                          ft.ChartAxisLabel(value=1, label=ft.Text("M")),
+                          ft.ChartAxisLabel(value=2, label=ft.Text("M")),
+                          ft.ChartAxisLabel(value=3, label=ft.Text("J")),
+                          ft.ChartAxisLabel(value=4, label=ft.Text("V")),
+                          ft.ChartAxisLabel(value=5, label=ft.Text("S")),
+                          ft.ChartAxisLabel(value=6, label=ft.Text("D")),
+                          '''
