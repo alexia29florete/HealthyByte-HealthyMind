@@ -210,8 +210,14 @@ def main(page: ft.Page):
     #---------------------------------------------
    # --- 3. UI --- (Secțiunea de Statistici REPARATĂ)
    # --- 3. UI --- (Secțiunea de Statistici REPARATĂ)
-    valori_grafic = [6, 6, 7, 8, 9, 3, 4]
+    valori_grafic = [6, 6, 7, 8, 9, 3, 4] # ore somn
     data_points = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic)]
+
+    valori_grafic1 = [2550, 2345, 2678, 2367, 2789, 2456, 2234]# calorii arse
+    data_points1 = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic1)]
+
+    valori_grafic2 = [2400, 2435, 2763, 3120, 2432, 2436, 2214] # calorii consumate 
+    data_points2 = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic2)]
 
     stats_view = ft.Column(
     [
@@ -238,6 +244,120 @@ def main(page: ft.Page):
                 baseline_x=0,
                 left_axis=ft.ChartAxis(
                     labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(0, 11, 2)],
+                    labels_size=40,
+                ),
+                horizontal_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
+                vertical_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
+                expand=True,
+            ),
+            height=350,
+            padding=ft.padding.all(10),
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            shadow=ft.BoxShadow(blur_radius=10, color=ft.Colors.GREY_300),
+        ),
+
+        ft.Container(height=8),
+
+        ft.Row(
+            [
+                ft.Container(ft.Text("Mo", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Tu", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("We", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Th", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Fr", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Sa", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Su", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+            ],
+            spacing=0,
+        ),
+        #---------------------------------------------------
+        ft.Text("Burnt Calories in the last 7 Days", color=ft.Colors.GREY_700),
+
+        ft.Container(
+            content=ft.LineChart(
+                data_series=[
+                    ft.LineChartData(
+                        data_points=data_points1,
+                        stroke_width=4,
+                        color=ft.Colors.BLUE,
+                        curved=True,
+                        below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        point=True,
+                    )
+                ],
+                border=ft.border.all(1, ft.Colors.GREY_300),
+                min_y=1800,
+                max_y=3000,
+                min_x=0,
+                max_x=6,
+                baseline_x=0,
+                left_axis=ft.ChartAxis(
+                    labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(1800, 3000, 100)],
+                    labels_size=40,
+                ),
+                horizontal_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
+                vertical_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
+                expand=True,
+            ),
+            height=350,
+            padding=ft.padding.all(10),
+            bgcolor=ft.Colors.WHITE,
+            border_radius=10,
+            shadow=ft.BoxShadow(blur_radius=10, color=ft.Colors.GREY_300),
+        ),
+
+        ft.Container(height=8),
+
+        ft.Row(
+            [
+                ft.Container(ft.Text("Mo", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Tu", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("We", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Th", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Fr", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Sa", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+                ft.Container(ft.Text("Su", size=12, color=ft.Colors.GREY_700),
+                             expand=True, alignment=ft.alignment.center),
+            ],
+            spacing=0,
+        ),
+         #---------------------------------------------------
+        ft.Text("Consumed Calories in the last 7 Days", color=ft.Colors.GREY_700),
+
+        ft.Container(
+            content=ft.LineChart(
+                data_series=[
+                    ft.LineChartData(
+                        data_points=data_points2,
+                        stroke_width=4,
+                        color=ft.Colors.BLUE,
+                        curved=True,
+                        below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+                        point=True,
+                    )
+                ],
+                border=ft.border.all(1, ft.Colors.GREY_300),
+                min_y=2000,
+                max_y=3500,
+                min_x=0,
+                max_x=6,
+                baseline_x=0,
+                left_axis=ft.ChartAxis(
+                    labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(2000, 3500, 100)],
                     labels_size=40,
                 ),
                 horizontal_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
