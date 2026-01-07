@@ -22,9 +22,12 @@ class SmartFoodAnalyzer:
             raise ValueError("OPENAI_API_KEY not found!")
         self.openai_client = OpenAI(api_key=api_key)
         
-        # MCP setup
-        self.node_path = "/home/maria/.nvm/versions/node/v20.19.6/bin/node"
-        self.mcp_path = "/home/maria/mcp-opennutrition/build/index.js"
+        # MCP setup - get paths from environment variables
+        self.node_path = os.getenv("NODE_PATH", "node")  # Default to 'node' in PATH
+        self.mcp_path = os.getenv("MCP_OPENNUTRITION_PATH")
+        
+        if not self.mcp_path:
+            raise ValueError("MCP_OPENNUTRITION_PATH not found in .env file!")
     
     def extract_foods_with_llm(self, user_text):
         """
@@ -67,6 +70,9 @@ Respond ONLY with valid JSON, nothing else.
         Returns:
             Dict with nutritional data for each food
         """
+        import sys
+        import subprocess
+        
         server_params = StdioServerParameters(
             command=self.node_path,
             args=[self.mcp_path],
@@ -75,6 +81,7 @@ Respond ONLY with valid JSON, nothing else.
         
         nutrition_data = {}
         
+        # Suppress MCP server stdout messages
         async with stdio_client(server_params) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()
@@ -167,17 +174,19 @@ User said: "{user_text}"
 REAL nutritional data from database:
 {nutrition_summary}
 
-Analyze this data and provide a response in continuous text form, professional but friendly. DO NOT use numbered lists, bullet points, or separate fragments (except for the nutritional values already provided above).
+CRITICAL: The nutritional summary above is already displayed to the user. DO NOT repeat any numbers.
 
-After the nutritional summary, continue with fluid text that includes:
-- Analysis of nutritional balance (what's missing or deficient and what effects it may have)
-- What nutrients are in excess and what effects it may have
+Start your response with: "In terms of nutritional balance, your meal..."
+
+Then continue with:
+- What's missing or deficient and potential effects
+- What nutrients may be in excess and potential effects
 - Impact on emotional state and energy levels
-- Empathetic and realistic feedback, without exaggeration
-- Practical and concrete suggestions
-- A recommendation for the next meal
+- Empathetic feedback about their guilt feelings
+- Practical suggestions for improvement
+- A specific recommendation for the next meal
 
-Tone: Professional but empathetic, direct and honest, without exaggerated phrases. Speak clearly and to the point.
+Tone: Professional but empathetic, direct and honest.
 """
         
         response = self.openai_client.chat.completions.create(
