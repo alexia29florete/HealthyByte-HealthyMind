@@ -4,21 +4,20 @@ def get_login_view(page, on_login_success):
     username = ft.TextField(label="Username", width=300, bgcolor="white")
     password = ft.TextField(label="Password", password=True, can_reveal_password=True, width=300, bgcolor="white")
 
-    # Folosim Stack pentru a pune imaginea sub formular
+    
     return ft.Stack([
-        # Stratul 1: Imaginea de fundal
         ft.Image(
             #src="ia4_bck.jpg",
             #src="bck.png",
             src="bck3.jpg",
             fit=ft.ImageFit.COVER,
-            width=page.width, # Preia lățimea ferestrei browserului
+            width=page.width, 
             height=page.height,
             #expand=True,
-            #width=1920, # Forțăm dimensiuni mari pentru a acoperi ecranul
+            #width=1920, 
             #height=1080,
         ),
-        # Stratul 2: Formularul de Login centrat
+        
         ft.Container(
             content=ft.Column([
                 ft.Container(

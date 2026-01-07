@@ -4,19 +4,19 @@ from login import get_login_view
 def main(page: ft.Page):
 
     def handle_login_success():
-        login_container.visible = False    # Ascundem login-ul
-        journal_view.visible = True        # Arătăm jurnalul
-        page.navigation_bar.visible = True # Arătăm meniul de jos
+        login_container.visible = False   
+        journal_view.visible = True       
+        page.navigation_bar.visible = True 
         page.update()
 
-    # Setări de bază
+   
     page.title = "HealthyByte - HealthyMind"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.padding = 30
     page.scroll = ft.ScrollMode.AUTO 
     page.bgcolor = "#F0F2F5" 
 
-    # --- 1. REFERINȚE DATE ---
+    # --- DATA REF---
     breakfast1_ref = ft.Ref[ft.TextField](); lunch1_ref = ft.Ref[ft.TextField](); dinner1_ref = ft.Ref[ft.TextField]()
     breakfast1_q_ref = ft.Ref[ft.TextField](); lunch1_q_ref = ft.Ref[ft.TextField](); dinner1_q_ref = ft.Ref[ft.TextField]()
 
@@ -39,7 +39,7 @@ def main(page: ft.Page):
     ex_type5_ref = ft.Ref[ft.TextField](); ex_dur5_ref = ft.Ref[ft.TextField]()
 
 
-    # --- 2. LOGICĂ SALVARE ---
+    # ---SAVE---
     def save_clicked(e):
         user_data = {
             "meals": {
@@ -49,8 +49,8 @@ def main(page: ft.Page):
             },
             "wellness": {"m": mood_ref.current.value, "e": energy_ref.current.value, "mind": mindset_ref.current.value}
         }
-        print("Date capturate:", user_data)
-        page.snack_bar = ft.SnackBar(ft.Text("Jurnal salvat!"), bgcolor="green")
+        print("Data:", user_data)
+        page.snack_bar = ft.SnackBar(ft.Text("Info saved!"), bgcolor="green")
         page.snack_bar.open = True
         page.update()
 
@@ -60,14 +60,14 @@ def main(page: ft.Page):
         stats_view.visible = (index == 1)
         page.update()
 
-    # --- 3. UI ---
+    # ---  UI ---
     journal_view = ft.Column([
         ft.Text("Daily Journal", size=40, color="blue900", weight="bold"),
         ft.Text("Please insert details of your day", color="grey700"),
         ft.Container(height=10),
 
         ft.ResponsiveRow([
-            # CARD MESE (Corectat: pus în ft.Column pentru aliniere)
+            # MEALS
             ft.Column([
                 ft.Card(
                     content=ft.Container(
@@ -118,7 +118,7 @@ def main(page: ft.Page):
                 )
             ], col={"sm": 12, "md": 6}),
 
-            # CARD SNACK-URI
+            # CARD SNACKS
             ft.Column([
                 ft.Card(
                     content=ft.Container(
@@ -145,7 +145,7 @@ def main(page: ft.Page):
                 )
             ], col={"sm": 12, "md": 6}),
 
-            # CARD WELLNESS
+            #  WELLNESS
             ft.Column([
                 ft.Card(
                     content=ft.Container(
@@ -160,17 +160,17 @@ def main(page: ft.Page):
                 )
             ], col={"sm": 12, "md": 6}),
 
-            # CARD ACTIVITATE
+            #  ACTIVIY
             ft.Column([
                 ft.Card(
                     content=ft.Container(
                         padding=20,
                         content=ft.Column([
                             ft.ListTile(title=ft.Text("Rest & Activity", weight="bold")),
-                            ft.Text("Sleeping Schedule", size=14, weight="w500"),
+                            ft.Text("Sleeping Schedule", size=14, weight="bold"),
                             ft.TextField(ref=sleep_h_ref, label="Sleep Hours"),
                             ft.TextField(ref=sleep_i_ref, label="Sleep Interval"),
-                            ft.Text("Fitness and Exercises", size=14, weight="w500"),
+                            ft.Text("Fitness and Exercises", size=14, weight="bold"),
                              ft.Row([
                                 ft.TextField(ref=ex_type1_ref, label="Activity1", border="underline", expand=True),
                                 ft.TextField(ref=ex_dur1_ref, label="Duration1", border="underline", expand=True),
@@ -191,9 +191,6 @@ def main(page: ft.Page):
                                 ft.TextField(ref=ex_type5_ref, label="Activity5", border="underline", expand=True),
                                 ft.TextField(ref=ex_dur5_ref, label="Duration5", border="underline", expand=True),
                             ], spacing=10),
-                             
-                           # ft.TextField(ref=ex_type_ref, label="Exercise Type"),
-                           # ft.TextField(ref=ex_dur_ref, label="Exercise Interval"),
                         ])
                     )
                 )
@@ -208,8 +205,7 @@ def main(page: ft.Page):
     ], visible=True)
 
     #---------------------------------------------
-   # --- 3. UI --- (Secțiunea de Statistici REPARATĂ)
-   # --- 3. UI --- (Secțiunea de Statistici REPARATĂ)
+    #STATISTICS
     valori_grafic = [6, 6, 7, 8, 9, 3, 4] # ore somn
     data_points = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic)]
 
@@ -222,9 +218,35 @@ def main(page: ft.Page):
     valori_grafic3 = [1, 5, 6, 3, 7, 4, 10] # happiness level
     data_points3 = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic3)]
 
+    feedback_text_ref = ft.Ref[ft.Text]() ## pt caseta AI
+
+    feedback_card = ft.Card(
+        content=ft.Container(
+            padding=20,
+            content=ft.Column([
+            ft.Row([
+                ft.Icon(ft.Icons.AUTO_AWESOME, color=ft.Colors.AMBER_700),
+                ft.Text("AI Personalized Insights", size=20, weight="bold", color=ft.Colors.BLUE_900),
+            ]),
+            ft.Divider(),
+            ft.Text(
+                ref=feedback_text_ref,
+                value="Please insert today's data and you'll receive some meniu ideas!",
+                size=16,
+                color=ft.Colors.GREY_800,
+                italic=True,
+            ),
+            ft.Container(height=10),
+            ft.Text("💡 Meniu Recommendations:", weight="bold", color=ft.Colors.GREEN_700),
+            ft.Text("We recommend ..."),
+            ])
+        ),
+        elevation=4,
+    )
+
     stats_view = ft.Column(
     [
-        ft.Text("Dashboard Statistici", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
+        ft.Text("Statistics dashboard", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
         ft.Text("Hours Slept in the last 7 Days", color=ft.Colors.GREY_700),
 
         ft.Container(
@@ -417,7 +439,7 @@ def main(page: ft.Page):
                 max_x=6,
                 baseline_x=0,
                 left_axis=ft.ChartAxis(
-                    labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(0, 10, 1)],
+                    labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(0, 11, 1)],
                     labels_size=40,
                 ),
                 horizontal_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
@@ -452,46 +474,34 @@ def main(page: ft.Page):
             ],
             spacing=0,
         ),
+          #------------THE FEEDBACK RESPONSE----------------------------------
+       ft.Container(height=16),
+       feedback_card,
     ],
     visible=False,
     expand=True,
     )
 
 
-    # --- 3. UI --- (Secțiunea de Statistici REPARATĂ FĂRĂ ERORI)
    #---------------------------------------------------------------
     page.navigation_bar = ft.NavigationBar(
         destinations=[
-            ft.NavigationBarDestination(icon="edit_note", label="Jurnal"),
-            ft.NavigationBarDestination(icon="insert_chart", label="Statistici"),
+            ft.NavigationBarDestination(icon="edit_note", label="My Journal"),
+            ft.NavigationBarDestination(icon="insert_chart", label="Statistics"),
         ],
         on_change=navigate
     )
 
     ###################################################################
-    # În app.py, în interiorul funcției main:
-    login_container = get_login_view(page, handle_login_success) # Adaugă 'page' ca prim argument
-
-    # MODIFICĂ journal_view să fie invizibil la început
-    journal_view.visible = False 
     
-    # MODIFICĂ navigation_bar să fie invizibil la început
+    login_container = get_login_view(page, handle_login_success) 
+    journal_view.visible = False 
     page.navigation_bar.visible = False
-
-    # Adaugă login_container în listă
     page.add(login_container, journal_view, stats_view)
     #---------------------------------------------------------------
-   # page.add(journal_view, stats_view)
+   
 
 if __name__ == "__main__":
     ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=8550, assets_dir="assets")
 
-    '''
-                          ft.ChartAxisLabel(value=0, label=ft.Text("L")),
-                          ft.ChartAxisLabel(value=1, label=ft.Text("M")),
-                          ft.ChartAxisLabel(value=2, label=ft.Text("M")),
-                          ft.ChartAxisLabel(value=3, label=ft.Text("J")),
-                          ft.ChartAxisLabel(value=4, label=ft.Text("V")),
-                          ft.ChartAxisLabel(value=5, label=ft.Text("S")),
-                          ft.ChartAxisLabel(value=6, label=ft.Text("D")),
-                          '''
+    
