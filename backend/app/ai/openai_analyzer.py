@@ -71,7 +71,7 @@ OUTPUT JSON SCHEMA:
   "detected_foods": [string, ...],
   "detected_emotions": [string, ...],
   "feedback": "string in English (short paragraph)",
-  "next_meal_idea": "string in English (one sentence)"
+  "next_meal_idea": "string in English (short paragraph)"
 }}
 
 INPUT JSON:

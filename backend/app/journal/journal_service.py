@@ -3,9 +3,6 @@ from datetime import date, datetime
 
 from ..models import JournalEntry
 from ..utils.json_utils import dumps, loads
-from ..ai.nlp_processor import analyze_entry
-from ..ai.feedback_engine import generate_feedback
-from ..nutrition.nutrition_service import analyze_foods
 from .journal_repository import JournalRepository
 from ..ai.openai_analyzer import analyze_day_with_openai
 import re
@@ -84,7 +81,6 @@ def _build_entry_text(payload: Dict[str, Any]) -> str:
         else:
             lines.append(str(food))
 
-    # Optional free-text notes (if frontend sends it)
     notes = (payload.get("entry_text") or "").strip()
     if notes:
         lines.append("Notes: " + notes)
@@ -222,10 +218,10 @@ class JournalService:
         wellness = payload.get("wellness") or {}
         emotions = _emotions_from_wellness(wellness)
 
-        notes = (payload.get("entry_text") or "").strip()
-        if notes:
-            analysis = analyze_entry(notes)
-            emotions += analysis.get("emotions", [])
+        # notes = (payload.get("entry_text") or "").strip()
+        # if notes:
+        #     analysis = analyze_entry(notes)
+        #     emotions += analysis.get("emotions", [])
 
         emotions = _unique_preserve_order([str(x).strip().lower() for x in emotions if str(x).strip()])
 
@@ -237,9 +233,8 @@ class JournalService:
 
         nutrients = ai.get("nutrients", {}) or {}
 
-        # fallback dacă AI nu întoarce calories/macros
-        if not nutrients or float(nutrients.get("calories", 0) or 0) <= 0:
-            nutrients = analyze_foods(food_items) or {}
+        if not isinstance(nutrients, dict):
+            nutrients = {}
 
         # asigură cheile (și tip numeric)
         for k in ("calories", "protein_g", "carbs_g", "fat_g", "fiber_g"):
