@@ -6,6 +6,7 @@
 Copy `.env.example` to `.env` and fill in the values:
 
 ```bash
+cd backend
 cp .env.example .env
 ```
 Edit `.env` file:
@@ -27,6 +28,7 @@ MCP_OPENNUTRITION_PATH=/home/username/mcp-opennutrition/build/index.js
 **You need to be in the root directory, where ./run_dev.sh is located**
 
 ```bash
+cd HealthyByte-HealthyMind
 # Create virtual environment (from project root)
 python3 -m venv .venv
 
