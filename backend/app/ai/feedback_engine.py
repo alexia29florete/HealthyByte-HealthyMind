@@ -1,24 +1,12 @@
 from typing import List, Dict, Any
+from .smart_ai import generate_ai_feedback
 
-def generate_feedback(foods: List[str], emotions: List[str], nutrients: Dict[str, Any]) -> str:
-    parts: List[str] = []
 
-    if emotions:
-        parts.append(f"Am observat emoțiile: {', '.join(emotions)}.")
-        if "anxious" in emotions or "stressed" in emotions:
-            parts.append("Poate ajută să încetinești ritmul mesei și să respiri 1 minut înainte să mănânci.")
-        if "guilty" in emotions:
-            parts.append("Încearcă să eviți auto-critica; un singur episod nu definește progresul tău.")
-    else:
-        parts.append("Mulțumesc pentru jurnal. Dacă vrei, poți nota și cum te-ai simțit înainte și după masă.")
-
-    if foods:
-        parts.append(f"Alimente detectate: {', '.join(foods)}.")
-
-    # basic nutrient hint
-    kcal = (nutrients or {}).get("calories")
-    if isinstance(kcal, (int, float)) and kcal > 0:
-        parts.append(f"Estimare calorii: {int(round(kcal))} kcal.")
-
-    parts.append("Recomandare generală: adaugă o sursă de proteine + fibre la următoarea masă (ex: iaurt + fruct, pui + salată).")
-    return " ".join(parts)
+def generate_feedback(foods: List[str], emotions: List[str], nutrients: Dict[str, Any], user_text: str = "") -> str:
+    """
+    AI-only feedback. If AI fails, raise error.
+    """
+    ai_text = generate_ai_feedback(user_text or "")
+    if not ai_text:
+        raise ValueError("AI feedback failed: check OPENAI_API_KEY / MCP config.")
+    return ai_text
