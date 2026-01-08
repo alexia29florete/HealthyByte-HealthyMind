@@ -1,9 +1,33 @@
 import flet as ft
+# --- charts compat (Flet charts moved to extension package) ---
+try:
+    import flet_charts as ftc  # pip install flet-charts
+except Exception:
+    ftc = None
+
+if ftc is not None and not hasattr(ft, "LineChartDataPoint"):
+    # re-export commonly used chart classes into ft namespace
+    for name in [
+        "LineChart",
+        "LineChartData",
+        "LineChartDataPoint",
+        "ChartAxis",
+        "ChartAxisLabel",
+        "ChartGridLines",
+        "ChartPointShape",
+        "ChartPointLine",
+    ]:
+        if hasattr(ftc, name) and not hasattr(ft, name):
+            setattr(ft, name, getattr(ftc, name))
+# -------------------------------------------------------------
+
+from api_client import create_journal_entry, get_stats_summary, ApiError
 from login import get_login_view
 
 def main(page: ft.Page):
 
-    def handle_login_success():
+    def handle_login_success(token: str):
+        auth['token'] = token
         login_container.visible = False   
         journal_view.visible = True       
         page.navigation_bar.visible = True 
@@ -14,12 +38,15 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.LIGHT
     page.padding = 10
     page.scroll = ft.ScrollMode.AUTO 
-    #page.bgcolor = "#F0F2F5" 
+    #page.bgcolor = "#F0F2F5"
     page.theme = ft.Theme(color_scheme_seed=ft.Colors.GREEN)
     page.theme_mode = ft.ThemeMode.LIGHT
     page.bgcolor = "#E8F5E9"
 
+    auth = {'token': None}
 
+    feedback_display = ft.Text("", selectable=True)
+    stats_summary_text = ft.Text("", selectable=True)
 
     # --- DATA REF---
     breakfast1_ref = ft.Ref[ft.TextField](); lunch1_ref = ft.Ref[ft.TextField](); dinner1_ref = ft.Ref[ft.TextField]()
@@ -36,6 +63,7 @@ def main(page: ft.Page):
 
     mood_ref = ft.Ref[ft.Slider](); energy_ref = ft.Ref[ft.Slider](); mindset_ref = ft.Ref[ft.Slider]()
     sleep_h_ref = ft.Ref[ft.TextField](); sleep_i_ref = ft.Ref[ft.TextField]()
+    entry_date_ref = ft.Ref[ft.TextField]()
 
     ex_type1_ref = ft.Ref[ft.TextField](); ex_dur1_ref = ft.Ref[ft.TextField]()
     ex_type2_ref = ft.Ref[ft.TextField](); ex_dur2_ref = ft.Ref[ft.TextField]()
@@ -46,23 +74,158 @@ def main(page: ft.Page):
 
     # ---SAVE---
     def save_clicked(e):
-        user_data = {
-            "meals": {
-                "breakfast": [breakfast1_ref.current.value, breakfast1_q_ref.current.value,breakfast2_ref.current.value, breakfast2_q_ref.current.value,breakfast3_ref.current.value, breakfast3_q_ref.current.value],
-                "lunch": [lunch1_ref.current.value, lunch1_q_ref.current.value,lunch2_ref.current.value, lunch2_q_ref.current.value,lunch3_ref.current.value, lunch3_q_ref.current.value],
-                "dinner": [dinner1_ref.current.value, dinner1_q_ref.current.value,dinner2_ref.current.value, dinner2_q_ref.current.value,dinner3_ref.current.value, dinner3_q_ref.current.value]
-            },
-            "wellness": {"m": mood_ref.current.value, "e": energy_ref.current.value, "mind": mindset_ref.current.value}
+        if not auth.get('token'):
+            page.snack_bar = ft.SnackBar(ft.Text("Not logged in."), bgcolor="red")
+            page.snack_bar.open = True
+            page.update()
+            return
+
+        def food_item(food_val, qty_val):
+            food = (food_val or "").strip()
+            if not food:
+                return None
+            try:
+                q = int(float(qty_val)) if qty_val not in (None, "") else None
+            except Exception:
+                q = None
+            return {"food": food, "quantity_g": q}
+
+        breakfast = [food_item(breakfast1_ref.current.value, breakfast1_q_ref.current.value),
+                     food_item(breakfast2_ref.current.value, breakfast2_q_ref.current.value),
+                     food_item(breakfast3_ref.current.value, breakfast3_q_ref.current.value)]
+        lunch = [food_item(lunch1_ref.current.value, lunch1_q_ref.current.value),
+                 food_item(lunch2_ref.current.value, lunch2_q_ref.current.value),
+                 food_item(lunch3_ref.current.value, lunch3_q_ref.current.value)]
+        dinner = [food_item(dinner1_ref.current.value, dinner1_q_ref.current.value),
+                  food_item(dinner2_ref.current.value, dinner2_q_ref.current.value),
+                  food_item(dinner3_ref.current.value, dinner3_q_ref.current.value)]
+
+        snack1 = [food_item(snack1_ref.current.value, snack1_qref.current.value)]
+        snack2 = [food_item(snack2_ref.current.value, snack2_qref.current.value)]
+        snack3 = [food_item(snack3_ref.current.value, snack3_qref.current.value)]
+        snack4 = [food_item(snack4_ref.current.value, snack4_qref.current.value)]
+        snack5 = [food_item(snack5_ref.current.value, snack5_qref.current.value)]
+        snack6 = [food_item(snack6_ref.current.value, snack6_qref.current.value)]
+
+        # remove None
+        breakfast = [x for x in breakfast if x]
+        lunch = [x for x in lunch if x]
+        dinner = [x for x in dinner if x]
+        snack1 = [x for x in snack1 if x]
+        snack2 = [x for x in snack2 if x]
+        snack3 = [x for x in snack3 if x]
+        snack4 = [x for x in snack4 if x]
+        snack5 = [x for x in snack5 if x]
+        snack6 = [x for x in snack6 if x]
+
+        # wellness sliders might be string
+        def to_int(v):
+            try:
+                return int(float(v))
+            except Exception:
+                return None
+
+        fitness = []
+        def add_ex(t, d):
+            name = (t or "").strip()
+            if not name:
+                return
+            try:
+                minutes = int(float(d)) if d not in (None, "") else None
+            except Exception:
+                minutes = None
+            if minutes is None:
+                return
+            fitness.append({"exercise": name, "time_min": minutes})
+
+        add_ex(ex_type1_ref.current.value, ex_dur1_ref.current.value)
+        add_ex(ex_type2_ref.current.value, ex_dur2_ref.current.value)
+        add_ex(ex_type3_ref.current.value, ex_dur3_ref.current.value)
+        add_ex(ex_type4_ref.current.value, ex_dur4_ref.current.value)
+        add_ex(ex_type5_ref.current.value, ex_dur5_ref.current.value)
+
+        payload = {
+            "entry_date": (entry_date_ref.current.value or "").strip() or None,
+            "main_meals": {"breakfast": breakfast, "lunch": lunch, "dinner": dinner},
+            "snacks": {"snack1": snack1, "snack2": snack2, "snack3": snack3, "snack4": snack4, "snack5": snack5, "snack6": snack6},
+            "wellness": {"mood": to_int(mood_ref.current.value), "energy": to_int(energy_ref.current.value), "focus": to_int(mindset_ref.current.value)},
+            "rest": {"sleep_hours": to_int(sleep_h_ref.current.value), "sleep_interval": (sleep_i_ref.current.value or "").strip()},
+            "fitness": fitness,
         }
-        print("Data:", user_data)
-        page.snack_bar = ft.SnackBar(ft.Text("Info saved!"), bgcolor="green")
-        page.snack_bar.open = True
+
+        try:
+            result = create_journal_entry(auth['token'], payload)
+            feedback_display.value = result.get("feedback", "")
+            page.snack_bar = ft.SnackBar(ft.Text("Saved!"), bgcolor="green")
+            page.snack_bar.open = True
+        except ApiError as err:
+            page.snack_bar = ft.SnackBar(ft.Text(str(err)), bgcolor="red")
+            page.snack_bar.open = True
+
         page.update()
+
+
+    def refresh_stats():
+        if not auth.get('token'):
+            stats_summary_text.value = "Not logged in."
+            return
+        try:
+            s = get_stats_summary(auth['token'])
+            macros = s.get("macros_totals", {})
+            emo = s.get("emotions_frequency", {})
+            cal = s.get("calories_trend", [])
+
+            total_cal = 0
+            if isinstance(cal, list):
+                for x in cal:
+                    try:
+                        total_cal += float(x.get("calories", 0))
+                    except Exception:
+                        pass
+
+            stats_summary_text.value = (
+                f"Total calories (trend sum): {int(total_cal)}\n"
+                f"Macros: P {macros.get('protein_g', 0)}g | C {macros.get('carbs_g', 0)}g | F {macros.get('fat_g', 0)}g | Fiber {macros.get('fiber_g', 0)}g\n"
+                f"Emotions: " + (", ".join([f"{k}={v}" for k, v in emo.items()]) if emo else "-")
+            )
+
+            # Acceptă ambele formate: fie *_7d la root, fie charts.* (în funcție de backend)
+            charts = s.get("charts", {}) or {}
+            sleep = charts.get("sleep_hours", [0]*7)
+            burned = charts.get("burned_calories", [0]*7)
+            consumed = charts.get("consumed_calories", [0]*7)
+            happy = charts.get("happiness", [0]*7)
+
+            # forțează exact 7 valori (ca să nu crape chart-ul / să nu rămână cu vechi)
+            def norm7(vals):
+                vals = list(vals)[:7]
+                while len(vals) < 7:
+                    vals.append(0)
+                return vals
+
+            sleep = norm7(sleep)
+            burned = norm7(burned)
+            consumed = norm7(consumed)
+            happy = norm7(happy)
+
+            # UPDATE: acum folosești seriile tale (sleep_series, burned_series, etc.)
+            sleep_series.data_points = [ft.LineChartDataPoint(i, float(v)) for i, v in enumerate(sleep)]
+            burned_series.data_points = [ft.LineChartDataPoint(i, float(v)) for i, v in enumerate(burned)]
+            consumed_series.data_points = [ft.LineChartDataPoint(i, float(v)) for i, v in enumerate(consumed)]
+            happiness_series.data_points = [ft.LineChartDataPoint(i, float(v)) for i, v in enumerate(happy)]
+
+            page.update()
+
+        except ApiError as e:
+            stats_summary_text.value = str(e)
+            page.update()
 
     def navigate(e):
         index = e.control.selected_index
         journal_view.visible = (index == 0)
         stats_view.visible = (index == 1)
+        if index == 1:
+            refresh_stats()
         page.update()
 
     # --- ADDED LAST TIME ---
@@ -109,7 +272,7 @@ def main(page: ft.Page):
             ),
         ),
         elevation=0,
-    ) 
+    )
 
     # ---  UI ---
     journal_view = ft.Column([
@@ -261,6 +424,7 @@ def main(page: ft.Page):
                         padding=20,
                         content=ft.Column([
                             ft.ListTile(title=ft.Text("Rest & Activity", weight="bold")),
+                            ft.TextField(ref=entry_date_ref, label="Entry date (YYYY-MM-DD)", hint_text="e.g. 2026-01-08 (leave empty = today)"),
                             ft.Text("Sleeping Schedule", size=14, weight="bold"),
                             ft.TextField(ref=sleep_h_ref, label="Sleep Hours"),
                             ft.TextField(ref=sleep_i_ref, label="Sleep Interval"),
@@ -289,14 +453,13 @@ def main(page: ft.Page):
                     )
                 )
             ], col={"sm": 12, "md": 6}),
-             
+
             ft.Column(
                     [image_card1],
                     col={"sm": 12, "md": 6},
             ),
-        ], 
-           spacing=20,
-           alignment=ft.MainAxisAlignment.START,##################################################
+        ], spacing=20,
+            alignment=ft.MainAxisAlignment.START,##################################################
         ),
       # ft.Column([image_card1], col={"sm": 12, "md": 6}),
 
@@ -309,17 +472,56 @@ def main(page: ft.Page):
 
     #---------------------------------------------
     #STATISTICS
-    valori_grafic = [6, 6, 7, 8, 9, 3, 4] # ore somn
-    data_points = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic)]
+    #---------------------------------------------
+    # STATISTICS (serii actualizabile din refresh_stats)
+    sleep_series = ft.LineChartData(
+        data_points=[],
+        stroke_width=4,
+        #color=ft.Colors.BLUE,
+        #curved=True,
+        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+        color="#43A047", 
+        curved=True,
+        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
+        point=True,
+    )
 
-    valori_grafic1 = [2550, 2345, 2678, 2367, 2789, 2456, 2234]# calorii arse
-    data_points1 = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic1)]
+    burned_series = ft.LineChartData(
+        data_points=[],
+        stroke_width=4,
+        #color=ft.Colors.BLUE,
+        #curved=True,
+        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+        color="#43A047", 
+        curved=True,
+        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
+        point=True,
+    )
 
-    valori_grafic2 = [2400, 2435, 2763, 3120, 2432, 2436, 2214] # calorii consumate 
-    data_points2 = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic2)]
+    consumed_series = ft.LineChartData(
+        data_points=[],
+        stroke_width=4,
+        #color=ft.Colors.BLUE,
+        #curved=True,
+        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+        color="#43A047", 
+        curved=True,
+        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
+        point=True,
+    )
 
-    valori_grafic3 = [1, 5, 6, 3, 7, 4, 10] # happiness level
-    data_points3 = [ft.LineChartDataPoint(i, val) for i, val in enumerate(valori_grafic3)]
+    happiness_series = ft.LineChartData(
+        data_points=[],
+        stroke_width=4,
+        #color=ft.Colors.BLUE,
+        #curved=True,
+        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
+        color="#43A047", 
+        curved=True,
+        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
+        point=True,
+    )
+
 
     feedback_text_ref = ft.Ref[ft.Text]() ## pt caseta AI
 
@@ -342,7 +544,7 @@ def main(page: ft.Page):
             ),
             ft.Container(height=10),
             ft.Text("💡 Meniu Recommendations:", weight="bold", color=ft.Colors.GREEN_700),
-            ft.Text("We recommend ..."),
+            feedback_display,
             ])
         ),
         elevation=4,
@@ -358,23 +560,13 @@ def main(page: ft.Page):
              color="#1B5E20",   
              text_align=ft.TextAlign.CENTER,
             ),
+        stats_summary_text,
+        ft.FilledButton("Refresh stats", on_click=lambda _: refresh_stats(), bgcolor=ft.Colors.GREEN_600),
         ft.Text("Hours Slept in the last 7 Days", color=ft.Colors.GREY_700),
 
         ft.Container(
             content=ft.LineChart(
-                data_series=[
-                    ft.LineChartData(
-                        data_points=data_points,
-                        stroke_width=4,
-                        #color=ft.Colors.BLUE,
-                        #curved=True,
-                        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
-                        color="#43A047", 
-                        curved=True,
-                        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
-                        point=True,
-                    )
-                ],
+                data_series=[sleep_series],
                 border=ft.border.all(1, ft.Colors.GREY_300),
                 min_y=0,
                 max_y=10,
@@ -422,27 +614,15 @@ def main(page: ft.Page):
 
         ft.Container(
             content=ft.LineChart(
-                data_series=[
-                    ft.LineChartData(
-                        data_points=data_points1,
-                        stroke_width=4,
-                        #color=ft.Colors.BLUE,
-                        #curved=True,
-                        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
-                        color="#43A047", 
-                        curved=True,
-                        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
-                        point=True,
-                    )
-                ],
+                data_series=[burned_series],
                 border=ft.border.all(1, ft.Colors.GREY_300),
-                min_y=1800,
-                max_y=3000,
+                min_y=0,
+                max_y=1000,
                 min_x=0,
                 max_x=6,
                 baseline_x=0,
                 left_axis=ft.ChartAxis(
-                    labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(1800, 3000, 100)],
+                    labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(0, 3501, 500)],
                     labels_size=40,
                 ),
                 horizontal_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
@@ -482,27 +662,15 @@ def main(page: ft.Page):
 
         ft.Container(
             content=ft.LineChart(
-                data_series=[
-                    ft.LineChartData(
-                        data_points=data_points2,
-                        stroke_width=4,
-                        #color=ft.Colors.BLUE,
-                        #curved=True,
-                        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
-                        color="#43A047", 
-                        curved=True,
-                        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
-                        point=True,
-                    )
-                ],
+                data_series=[consumed_series],
                 border=ft.border.all(1, ft.Colors.GREY_300),
-                min_y=2000,
+                min_y=0,
                 max_y=3500,
                 min_x=0,
                 max_x=6,
                 baseline_x=0,
                 left_axis=ft.ChartAxis(
-                    labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(2000, 3500, 100)],
+                    labels=[ft.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(0, 3501, 500)],
                     labels_size=40,
                 ),
                 horizontal_grid_lines=ft.ChartGridLines(interval=1, color=ft.Colors.GREY_100),
@@ -542,19 +710,7 @@ def main(page: ft.Page):
 
         ft.Container(
             content=ft.LineChart(
-                data_series=[
-                    ft.LineChartData(
-                        data_points=data_points3,
-                        stroke_width=4,
-                        #color=ft.Colors.BLUE,
-                        #curved=True,
-                        #below_line_bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE),
-                        color="#43A047", 
-                        curved=True,
-                        below_line_bgcolor=ft.Colors.with_opacity(0.12, "#66BB6A"),
-                        point=True,
-                    )
-                ],
+                data_series=[happiness_series],
                 border=ft.border.all(1, ft.Colors.GREY_300),
                 min_y=0,
                 max_y=10,
@@ -627,5 +783,3 @@ def main(page: ft.Page):
 
 if __name__ == "__main__":
     ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=8550, assets_dir="assets")
-
-    

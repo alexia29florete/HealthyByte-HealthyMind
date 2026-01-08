@@ -3,11 +3,9 @@ from datetime import date, datetime
 
 from ..models import JournalEntry
 from ..utils.json_utils import dumps, loads
-from ..ai.nlp_processor import analyze_entry
-from ..ai.feedback_engine import generate_feedback
-from ..nutrition.nutrition_service import analyze_foods
 from .journal_repository import JournalRepository
-
+from ..ai.openai_analyzer import analyze_day_with_openai
+import re
 
 def _parse_date(d: Optional[str]) -> date:
     if not d:
@@ -33,7 +31,7 @@ def _collect_food_items(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     Expected UI shape:
       main_meals: { breakfast: [{food, quantity_g}, ...], lunch: [...], dinner: [...] }
-      snacks: { snack1: [...], snack2: [...], snack3: [...] }
+      snacks: { snack1: [...], snack2: [...], snack3: [...], snack4: [...], snack5: [...], snack6: [...] }
     """
     items: List[Dict[str, Any]] = []
 
@@ -47,9 +45,10 @@ def _collect_food_items(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
             if not isinstance(x, dict):
                 continue
             food = (x.get("food") or "").strip()
-            qty = x.get("quantity_g")
+            qty = _num_from_str(x.get("quantity_g"))
             if food:
                 items.append({"food": food, "quantity_g": qty})
+
 
     # main meals
     if isinstance(mm, dict):
@@ -62,6 +61,9 @@ def _collect_food_items(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
         add_list(snacks.get("snack1"))
         add_list(snacks.get("snack2"))
         add_list(snacks.get("snack3"))
+        add_list(snacks.get("snack4"))
+        add_list(snacks.get("snack5"))
+        add_list(snacks.get("snack6"))
 
     return items
 
@@ -79,7 +81,6 @@ def _build_entry_text(payload: Dict[str, Any]) -> str:
         else:
             lines.append(str(food))
 
-    # Optional free-text notes (if frontend sends it)
     notes = (payload.get("entry_text") or "").strip()
     if notes:
         lines.append("Notes: " + notes)
@@ -146,6 +147,59 @@ def _emotions_from_wellness(wellness: Any) -> List[str]:
 
     return emotions
 
+def _num_from_str(x):
+    if x is None:
+        return None
+    if isinstance(x, (int, float)):
+        return float(x)
+    s = str(x).strip()
+    if not s:
+        return None
+    m = re.search(r"(\d+(\.\d+)?)", s)
+    if not m:
+        return None
+    return float(m.group(1))
+
+
+def _estimate_burned_calories(fitness_list):
+    """
+    Estimare simplă kcal/min (poți ajusta)
+    """
+    if not isinstance(fitness_list, list):
+        return 0.0
+
+    kcal_per_min = {
+        "running": 11.0,
+        "jogging": 8.0,
+        "walking": 4.0,
+        "cycling": 7.0,
+        "gym": 6.0,
+        "swimming": 9.0,
+        "yoga": 3.0,
+    }
+
+    total = 0.0
+    for it in fitness_list:
+        if not isinstance(it, dict):
+            continue
+        name = str(it.get("exercise") or it.get("activity") or "").strip().lower()
+        minutes = _num_from_str(it.get("time_min") or it.get("duration_min") or it.get("minutes"))
+        if not name or not minutes:
+            continue
+        rate = kcal_per_min.get(name, 5.0)  # default
+        total += float(minutes) * rate
+
+    return float(total)
+
+def _parse_entry_date(payload):
+    d = payload.get("entry_date")
+    if not d:
+        return None
+    try:
+        return datetime.fromisoformat(d).date()
+    except Exception:
+        return None
+
 
 class JournalService:
     @staticmethod
@@ -164,18 +218,49 @@ class JournalService:
         wellness = payload.get("wellness") or {}
         emotions = _emotions_from_wellness(wellness)
 
-        notes = (payload.get("entry_text") or "").strip()
-        if notes:
-            analysis = analyze_entry(notes)
-            emotions += analysis.get("emotions", [])
+        # notes = (payload.get("entry_text") or "").strip()
+        # if notes:
+        #     analysis = analyze_entry(notes)
+        #     emotions += analysis.get("emotions", [])
 
         emotions = _unique_preserve_order([str(x).strip().lower() for x in emotions if str(x).strip()])
 
-        # 4) Nutrition uses quantities (quantity_g) if available
-        nutrients = analyze_foods(food_items)
+        # 4) Burned calories (din fitness)
+        fitness_list = payload.get("fitness") or []
+        burned = _estimate_burned_calories(fitness_list)
 
-        # 5) Feedback (foods + emotions + nutrients)
-        feedback = generate_feedback(food_names, emotions, nutrients)
+        ai = analyze_day_with_openai(payload=payload, entry_text=entry_text)
+
+        nutrients = ai.get("nutrients", {}) or {}
+
+        if not isinstance(nutrients, dict):
+            nutrients = {}
+
+        # asigură cheile (și tip numeric)
+        for k in ("calories", "protein_g", "carbs_g", "fat_g", "fiber_g"):
+            try:
+                nutrients[k] = float(nutrients.get(k, 0) or 0)
+            except Exception:
+                nutrients[k] = 0.0
+
+        nutrients["burned_calories"] = burned  # îl păstrăm pentru charts
+
+
+        # dacă vrei să forțezi EN:
+        feedback = ai.get("feedback", "").strip()
+        next_meal = ai.get("next_meal_idea", "").strip()
+        if next_meal:
+            feedback = (feedback + "\n\nNext meal idea: " + next_meal).strip()
+
+        # înlocuim foods/emotions cu ce întoarce AI (dacă are)
+        ai_foods = ai.get("detected_foods") or []
+        ai_emotions = ai.get("detected_emotions") or []
+
+        if ai_foods:
+            food_names = _unique_preserve_order([str(x).strip().lower() for x in ai_foods if str(x).strip()])
+        if ai_emotions:
+            emotions = _unique_preserve_order([str(x).strip().lower() for x in ai_emotions if str(x).strip()])
+
 
         # 6) Scalars
         w = wellness if isinstance(wellness, dict) else {}
@@ -185,7 +270,7 @@ class JournalService:
         entry = JournalEntry(
             user_id=user_id,
             entry_text=entry_text,
-            entry_date=_parse_date(payload.get("date")),
+            entry_date=_parse_date(payload.get("entry_date") or payload.get("date")),
 
             detected_foods=dumps(food_names),
             detected_emotions=dumps(emotions),
