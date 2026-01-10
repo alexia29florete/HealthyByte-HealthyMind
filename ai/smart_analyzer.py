@@ -37,18 +37,18 @@ class SmartFoodAnalyzer:
             List of mentioned foods (without nutritional data)
         """
         prompt = f"""
-Analyze the following text and extract ONLY the food names mentioned.
-Return a JSON with the list of foods, without quantities or other details.
+                Analyze the following text and extract ONLY the food names mentioned.
+                Return a JSON with the list of foods, without quantities or other details.
 
-User text: "{user_text}"
+                User text: "{user_text}"
 
-Response format (JSON):
-{{
-  "foods": ["apple", "bread", "cheese"]
-}}
+                Response format (JSON):
+                {{
+                "foods": ["apple", "bread", "cheese"]
+                }}
 
-Respond ONLY with valid JSON, nothing else.
-"""
+                Respond ONLY with valid JSON, nothing else.
+                """
         
         response = self.openai_client.chat.completions.create(
             model="gpt-3.5-turbo",

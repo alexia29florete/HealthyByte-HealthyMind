@@ -11,11 +11,13 @@ journal_bp = Blueprint("journal", __name__, url_prefix="/journal")
 @jwt_required()
 def create_entry():
     payload = request.get_json(silent=True) or {}
+    print(f"[DEBUG] Received payload: {payload}")  # DEBUG
     try:
         user_id = int(get_jwt_identity())
         created = JournalService.create_entry(user_id=user_id, payload=payload)
         return jsonify(created), 201
     except ValueError as e:
+        print(f"[ERROR] Journal creation failed: {e}")  # DEBUG
         return error(str(e), 400)
 
 
